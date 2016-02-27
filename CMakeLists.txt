@@ -1,23 +1,25 @@
 cmake_minimum_required(VERSION 3.3)
 # project specific options
-project(event_controller)
+project(event_controller CXX)
 
 # build specific options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g")
 
 # from what to build
 set(SOURCE_FILES controller.cpp)
 
 # what to build
-add_library(controller ${SOURCE_FILES})
+add_library(${PROJECT_NAME} ${SOURCE_FILES})
 
 # testing
+add_subdirectory(googletest/googletest)
 enable_testing()
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRECTORIES})
+include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
-set(TEST_FILE main.cpp)
-add_executable(utest ${TEST_FILE})
-target_link_libraries(utest controller ${GTEST_BOTH_LIBRARIES})
+set(GTEST_LIBRARIES gtest gtest_main)
 
-add_test(MainTest utest)
+set(TEST_FILE test.cpp)
+add_executable(first_test ${TEST_FILE})
+target_link_libraries(first_test ${PROJECT_NAME} ${GTEST_LIBRARIES})
+
+add_test(MainTest first_test)
