@@ -1,7 +1,9 @@
 #include "controller.h"
 #include <iostream>
 
-controller::controller()
+controller::~controller()
 {
-    std::cout << "I am alive" << std::endl;
 }
+
+controller::event_holder::~event_holder() {}
+controller::subscriber_holder::~subscriber_holder() {}
