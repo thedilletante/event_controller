@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.0)
 # project specific options
 project(event_controller CXX)
 
+include_directories(include)
 # build specific options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g")
 
 # from what to build
-set(SOURCE_FILES controller.cpp)
+set(SOURCE_FILES src/controller.cpp)
 
 # what to build
 add_library(${PROJECT_NAME} ${SOURCE_FILES})
@@ -18,7 +19,7 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 set(GTEST_LIBRARIES gtest gtest_main)
 
-set(TEST_FILE test.cpp)
+set(TEST_FILE tests/test.cpp)
 add_executable(first_test ${TEST_FILE})
 target_link_libraries(first_test ${PROJECT_NAME} ${GTEST_LIBRARIES})
 
