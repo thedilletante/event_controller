@@ -16,9 +16,6 @@ public:
     template <class EVENT>
     using handler_t = std::function<void(EVENT)>;
 private:
-    class event_holder;
-    using event_holder_ptr = std::unique_ptr<event_holder>;
-    using event_holder_list = std::list<event_holder_ptr>;
 
     template <class EVENT>
     class subscriber_holder
@@ -46,13 +43,13 @@ public:
     template <class EVENT>
     subscription_id<EVENT> subscribe(handler_t<EVENT> handler);
 
-    template <class EVENT, typename... Args>
-    bool emplace(Args&& ...args);
+    template <class EVENT>
+    bool emplace(EVENT&& evt);
 
     void do_delivery();
 
 private:
-    event_holder_list events_;
+    std::list<std::function<void()>> events_;
 
     template <class EVENT>
     subscriber_holder_list<EVENT>& get_subscribers()
@@ -164,54 +161,46 @@ controller::subscription_id<EVENT> controller::subscribe(handler_t<EVENT> handle
     return future.get();
 }
 
+template <typename Arg>
+struct invoke_type
+        : std::add_lvalue_reference<Arg> { };
 
-class controller::event_holder
-{
-public:
-    virtual ~event_holder();
-    virtual void process() = 0;
+template <typename T>
+struct invoke_type<std::reference_wrapper<T>> {
+    using type = T&;
 };
 
+template <typename T>
+using invoke_type_t = typename invoke_type<T>::type;
 
-template <class EVENT, typename... Args>
-bool controller::emplace(Args&& ...args)
+
+template <class EVENT>
+bool controller::emplace(EVENT&& event)
 {
-    class concrete_event_holder : public controller::event_holder
-    {
-    public:
-        explicit concrete_event_holder(const subscriber_holder_list<EVENT>& subscribers, Args&& ...args)
-                : subscribers_(subscribers)
-                , event_(std::forward<Args>(args)...) {}
+    auto event_process_task = [this](invoke_type_t<EVENT> event){
+        // request for subscribers
+        std::promise<subscriber_holder_list<EVENT>> fetched;
+        auto fetched_taks = [this, &fetched]() {
+            fetched.set_value(get_subscribers<EVENT>());
+        };
 
-        virtual void process() override
         {
-            for (auto& subscriber : subscribers_)
-            {
-                subscriber.handler_(std::forward<EVENT>(event_));
-            }
+            std::lock_guard<std::mutex> lock(subscription_mutex_);
+            fetching_tasks_.emplace(fetched_taks);
         }
+        notify_subscription_thread(subscription_message_type::GET_HANDLER);
+        auto future = fetched.get_future();
+        future.wait();
+        auto subscribers = future.get();
 
-    private:
-        subscriber_holder_list<EVENT> subscribers_;
-        EVENT event_;
+        // and call to handlers
+        for (auto& subscriber : subscribers)
+        {
+            subscriber.handler_(std::forward<EVENT>(event));
+        }
     };
-    // get current subscribers for this event
-    // create event holder with subscribers
-    std::promise<subscriber_holder_list<EVENT>&> fetched;
-    auto fetched_taks = [this, &fetched]() {
-        fetched.set_value(get_subscribers<EVENT>());
-    };
 
-    {
-        std::lock_guard<std::mutex> lock(subscription_mutex_);
-        fetching_tasks_.emplace(fetched_taks);
-    }
-
-    notify_subscription_thread(subscription_message_type::GET_HANDLER);
-    auto future = fetched.get_future();
-
-    future.wait();
-    events_.emplace_back(new concrete_event_holder(future.get(), std::forward<Args>(args)...));
+    events_.push_back(std::bind(event_process_task, std::forward<EVENT>(event)));
     return true;
 }
 

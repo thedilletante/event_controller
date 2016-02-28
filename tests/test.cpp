@@ -29,7 +29,7 @@ TEST_F(Controller_subscribeTest,
 TEST(Controller_emplace, should_not_throw)
 {
     controller cont;
-    ASSERT_NO_THROW(cont.emplace<int>(2));
+    ASSERT_NO_THROW(cont.emplace(2));
 }
 
 TEST(Controller_delivery, should_just_work)
@@ -42,8 +42,7 @@ TEST(Controller_delivery, should_just_work)
 
     cont.subscribe<int>(task);
 
-    cont.emplace<int>(4);
-
+    cont.emplace(4);
     cont.do_delivery();
     ASSERT_EQ(4, num);
 }

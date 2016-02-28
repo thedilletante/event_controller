@@ -1,5 +1,4 @@
 #include "controller.h"
-#include <iostream>
 
 controller::~controller()
 {
@@ -9,11 +8,9 @@ controller::~controller()
 
 void controller::do_delivery()
 {
-    for (auto& event_holder : events_)
+    for (auto& event_task : events_)
     {
-        event_holder->process();
+        event_task();
     }
     events_.clear();
 }
-
-controller::event_holder::~event_holder() {}
