@@ -62,7 +62,6 @@ private:
 
     std::thread subscription_thread_;
     std::promise<void> subscription_ready_;
-    std::promise<void> subscription_done_;
 
     enum class subscription_message_type : uint8_t
     {
