@@ -157,9 +157,10 @@ controller::subscription_id<EVENT> controller::subscribe(handler_t<EVENT> handle
     }
 
     notify_subscription_thread(subscription_message_type::PUSH_HANDLER);
-    pushed.get_future().wait();
+    auto future = pushed.get_future();
 
-    return pushed.get_future().get();
+    future.wait();
+    return future.get();
 }
 
 
