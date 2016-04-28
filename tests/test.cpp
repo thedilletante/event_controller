@@ -17,7 +17,7 @@ protected:
     ctrl controller_;
 };
 
-void handler(int num)
+void handler(int)
 {}
 
 TEST_F(Controller_subscribeTest,
@@ -76,6 +76,7 @@ TEST(Controller_delivery, should_just_work)
         std::cout << "Hello with a" << std::endl;
     };
 
-   // cont.subscribe
-
+    cont.subscribe<const a_class&>(task2);
+    cont.emplace(a_class{});
+    cont.do_delivery();
 }
